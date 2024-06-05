@@ -1,0 +1,97 @@
+import umap
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+from sklearn.manifold import TSNE
+from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
+
+class Cluster():
+    """Clase para aplicar reducción de dimensionalidad y visualizar clusters."""
+    def __init__(self) -> None:
+        pass
+
+    def apply_dimensionality_reduction(self, method, data, n_components=2, **kwargs):
+        """
+        Aplica reducción de dimensionalidad usando el método especificado.
+        
+        Args:
+        - method: Un string especificando 'PCA', 't-SNE' o 'UMAP'.
+        - data: DataFrame o array de NumPy con los datos.
+        - n_components: Número de componentes para la reducción.
+        - **kwargs: Argumentos adicionales específicos del método.
+        
+        Returns:
+        - Datos transformados a un espacio de menor dimensión.
+        """
+        if method == 'PCA':
+            model = PCA(n_components=n_components, **kwargs)
+        elif method == 't-SNE':
+            model = TSNE(n_components=n_components, **kwargs)
+        elif method == 'UMAP':
+            model = umap.UMAP(n_components=n_components, **kwargs)
+        else:
+            raise ValueError(f"Método no soportado: {method}")
+        
+        return model.fit_transform(data)
+    
+    def visualize_clusters_3d(self, data, cluster_labels, cluster_column_name, best_k=10):
+        pca_result = self.apply_dimensionality_reduction('PCA', data, n_components=3)
+        tsne_result = self.apply_dimensionality_reduction('t-SNE', data, n_components=3, init='random', perplexity=30)
+        umap_result = self.apply_dimensionality_reduction('UMAP', data, n_components=3, n_neighbors=15, min_dist=0.1)
+        
+        fig = plt.figure(figsize=(18, 6))
+        titles = ['PCA Clustering', 't-SNE Clustering', 'UMAP Clustering']
+        results = [pca_result, tsne_result, umap_result]
+
+        for i, (result, title) in enumerate(zip(results, titles), start=1):
+            ax = fig.add_subplot(1, 3, i, projection='3d')
+            sc = ax.scatter(result[:, 0], result[:, 1], result[:, 2], c=cluster_labels, cmap='viridis', s=50, alpha=0.6)
+            ax.set_title(title)
+
+        fig.colorbar(sc, ax=ax, orientation='horizontal', label=cluster_column_name, shrink=0.5)
+        plt.show()
+
+    def find_optimal_k(self, X, start_k=2, end_k=10, random_state=0):
+        silhouette_avg_scores = []
+        calinski_harabasz_scores = []
+        davies_bouldin_scores = []
+        
+        X_dense = X.toarray()  # Convertir a matriz densa una vez fuera del bucle
+        
+        for k in range(start_k, end_k + 1):
+            kmeans = KMeans(n_clusters=k, random_state=random_state)
+            kmeans.fit(X_dense)
+            
+            labels = kmeans.labels_
+            
+            silhouette_avg_scores.append(silhouette_score(X_dense, labels))
+            calinski_harabasz_scores.append(calinski_harabasz_score(X_dense, labels))
+            davies_bouldin_scores.append(davies_bouldin_score(X_dense, labels))
+        
+        plt.figure(figsize=(20, 5))
+        
+        plt.subplot(1, 3, 1)
+        plt.plot(range(start_k, end_k + 1), silhouette_avg_scores, marker='o')
+        plt.xlabel('Número de Clusters (k)')
+        plt.ylabel('Silhouette Score')
+        plt.title('Silhouette Score vs Número de Clusters')
+        
+        plt.subplot(1, 3, 2)
+        plt.plot(range(start_k, end_k + 1), calinski_harabasz_scores, marker='o')
+        plt.xlabel('Número de Clusters (k)')
+        plt.ylabel('Calinski-Harabasz Score')
+        plt.title('Calinski-Harabasz Score vs Número de Clusters')
+        
+        plt.subplot(1, 3, 3)
+        plt.plot(range(start_k, end_k + 1), davies_bouldin_scores, marker='o')
+        plt.xlabel('Número de Clusters (k)')
+        plt.ylabel('Davies-Bouldin Score')
+        plt.title('Davies-Bouldin Score vs Número de Clusters')
+        
+        plt.show()
