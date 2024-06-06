@@ -4,67 +4,68 @@ import random
 import pandas as pd
 import xml.etree.ElementTree as ET
 
-class Importer():
-    """_summary_
-    """
+class Importer:
+    """Class for importing and processing data files."""
+    
     def __init__(self) -> None:
         pass
 
     def abstract_names_function(self, path):
         """
-        Lista todos los nombres de los archivos en el directorio especificado.
+        Lists all file names in the specified directory.
 
         Args:
-        path (str): La ruta al directorio del que se quieren listar los archivos.
+        path (str): The path to the directory from which to list the files.
 
         Returns:
-        list: Una lista con los nombres de todos los archivos en el directorio.
+        list: A list with the names of all the files in the directory.
         """
-        # Verificar si el directorio existe
+        # Check if the directory exists
         if not os.path.exists(path):
-            return "El directorio no existe."
+            return "The directory does not exist."
         
-        # Obtener todos los archivos y subdirectorios en el directorio especificado
-        nombres_de_archivos = [archivo for archivo in os.listdir(path) if os.path.isfile(os.path.join(path, archivo))]
+        # Get all files and subdirectories in the specified directory
+        file_names = [file for file in os.listdir(path) if os.path.isfile(os.path.join(path, file))]
 
-        return nombres_de_archivos
+        return file_names
     
     def abstract_sampler(self, full_list, prop=0.8):
         """
-        Selecciona una muestra aleatoria de n elementos de una lista de strings.
+        Selects a random sample of elements from a list of strings.
 
         Args:
-        full_list (list): La lista original de strings de la cual seleccionar la muestra.
-        n (int): El número de elementos a seleccionar.
+        full_list (list): The original list of strings from which to select the sample.
+        prop (float): The proportion of elements to select from the list (default is 0.8).
 
         Returns:
-        list: Una lista con n elementos seleccionados aleatoriamente de la lista original.
+        list: A list with randomly selected elements from the original list.
         """
-        # Definir proporcion
-        self.n = int(len(full_list)*prop)
+        # Define the number of elements to sample based on the proportion
+        self.n = int(len(full_list) * prop)
 
-        # Verificar si n es mayor que la longitud de la lista
+        # Check if the number of elements to sample is greater than the length of the list
         if self.n > len(full_list):
-            return "Error: n es mayor que el número de elementos en la lista."
+            return "Error: The number of elements to sample is greater than the number of elements in the list."
         
-        # Seleccionar n elementos aleatorios de la lista
-        muestra_seleccionada = random.sample(full_list, self.n)
+        # Select random elements from the list
+        selected_sample = random.sample(full_list, self.n)
         
-        return muestra_seleccionada
+        return selected_sample
     
     def extract_data(self, file_path):
-        """Función para extraer los datos relevantes de un archivo XML
+        """
+        Extracts relevant data from an XML file.
 
         Args:
-            file_path (arr): array con los nombres de los archivos en string
+        file_path (str): Path to the XML file.
 
         Returns:
-            _dict_: devuelve un diccionario con el titulo y el resumen del archivo
+        dict: A dictionary with the title and abstract of the file.
         """
         tree = ET.parse(file_path)
         root = tree.getroot()
 
-        # Extraer información básica
+        # Extract basic information
         title = root.find('.//AwardTitle').text if root.find('.//AwardTitle') is not None else "No Title"
         abstract = root.find('.//AbstractNarration').text if root.find('.//AbstractNarration') is not None else "No Abstract"
         
@@ -74,24 +75,25 @@ class Importer():
         }
     
     def clean_text(self, text): 
-        """Función para limpiar el texto de los resúmenes
+        """
+        Cleans the text of abstracts.
 
         Args:
-            text (str): String con el texto a transformar
+        text (str): String with the text to transform.
 
         Returns:
-            str: Texto transformado
+        str: Transformed text.
         """
         if pd.isna(text):
-            return ""  # Retorna un string vacío si el texto es NaN
+            return ""  # Return an empty string if the text is NaN
 
-        # Eliminar etiquetas HTML
+        # Remove HTML tags
         text = re.sub(r'<[^>]+>', '', text)
-        # Eliminar caracteres especiales y números
+        # Remove special characters and numbers
         text = re.sub(r'[^a-zA-Z\s]', '', text)
-        # Convertir a minúsculas
+        # Convert to lowercase
         text = text.lower()
-        # Eliminar espacios adicionales
+        # Remove additional spaces
         text = re.sub(r'\s+', ' ', text).strip()
 
         return text
